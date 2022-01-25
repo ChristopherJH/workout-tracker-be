@@ -31,7 +31,7 @@ client.connect();
 app.get("/workouts", async (req, res) => {
   try {
     const dbres = await client.query(
-      "select * from workouts order by date desc"
+      "SELECT w.workout_id, title, day, duration_mins, notes, date, SUM(weight*reps) AS weight_lifted, COUNT(DISTINCT name) as exercises FROM workouts w JOIN sets s ON w.workout_id = s.workout_id GROUP BY w.workout_id ORDER BY date DESC"
     );
     res.status(200).json({ status: "success", data: dbres.rows });
   } catch (err) {
@@ -41,7 +41,18 @@ app.get("/workouts", async (req, res) => {
 
 app.get("/sets", async (req, res) => {
   try {
-    const dbres = await client.query("select * from sets order by date desc");
+    const dbres = await client.query("select * from sets");
+    res.status(200).json({ status: "success", data: dbres.rows });
+  } catch (err) {
+    res.status(404).json({ status: "failed", error: err });
+  }
+});
+
+app.get("/sets/best", async (req, res) => {
+  try {
+    const dbres = await client.query(
+      "select workout_id, name, MAX(weight) as weight, MAX(reps) as reps from sets group by workout_id, name order by workout_id asc"
+    );
     res.status(200).json({ status: "success", data: dbres.rows });
   } catch (err) {
     res.status(404).json({ status: "failed", error: err });
@@ -107,15 +118,12 @@ app.post("/:workout_id/sets", async (req, res) => {
     });
     // Remove the final comma from the string
     const formattedValuesString = valuesString.slice(0, -2);
-    console.log(formattedValuesString);
-
-    const dbres = await client.query(
-      `insert into sets (workout_id, 
-        name,
-        weight,
-        reps) values $1 returning *`,
-      [formattedValuesString]
-    );
+    const query = `insert into sets (workout_id, 
+      name,
+      weight,
+      reps) values ${formattedValuesString} returning *`;
+    console.log(query);
+    const dbres = await client.query(`$1`, [query]);
     res.status(201).json({
       status: "success",
       data: dbres.rows[0],
