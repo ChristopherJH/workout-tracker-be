@@ -110,20 +110,15 @@ interface SetType {
 app.post("/:workout_id/sets", async (req, res) => {
   const { data } = req.body;
   const setsArray: SetType[] = data;
+  // Format the string to be put in our query
   try {
-    // Format the string to be put in our query
-    let valuesString = "";
-    setsArray.forEach((set) => {
-      valuesString += `(${req.params.workout_id}, '${set.name}', ${set.weight}, ${set.reps}), `;
+    let dbres = { rows: [] };
+    setsArray.forEach(async (set) => {
+      dbres = await client.query(
+        "insert into sets (workout_id, name, weight, reps) values ($1, $2, $3, $4) returning *",
+        [req.params.workout_id, set.name, set.weight, set.reps]
+      );
     });
-    // Remove the final comma from the string
-    const formattedValuesString = valuesString.slice(0, -2);
-    const query = `insert into sets (workout_id, 
-      name,
-      weight,
-      reps) values ${formattedValuesString} returning *`;
-    console.log(query);
-    const dbres = await client.query(`$1`, [query]);
     res.status(201).json({
       status: "success",
       data: dbres.rows[0],
