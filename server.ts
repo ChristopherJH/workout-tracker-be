@@ -31,7 +31,7 @@ client.connect();
 app.get("/workouts", async (req, res) => {
   try {
     const dbres = await client.query(
-      "SELECT w.workout_id, title, day, duration_mins, notes, date, SUM(weight*reps) AS weight_lifted, COUNT(DISTINCT name) as exercises FROM workouts w JOIN sets s ON w.workout_id = s.workout_id GROUP BY w.workout_id ORDER BY date DESC"
+      "SELECT w.workout_id, title, day, duration_mins, notes, date, SUM(weight*reps) AS weight_lifted, COUNT(DISTINCT name) as exercises FROM workouts w JOIN sets s ON w.workout_id = s.workout_id GROUP BY w.workout_id ORDER BY w.date DESC"
     );
     res.status(200).json({ status: "success", data: dbres.rows });
   } catch (err) {
@@ -52,6 +52,27 @@ app.get("/sets/best", async (req, res) => {
   try {
     const dbres = await client.query(
       "select workout_id, name, MAX(weight) as weight, MAX(reps) as reps from sets group by workout_id, name order by workout_id asc"
+    );
+    res.status(200).json({ status: "success", data: dbres.rows });
+  } catch (err) {
+    res.status(404).json({ status: "failed", error: err });
+  }
+});
+
+//GET stats requests
+app.get("/totalweight", async (req, res) => {
+  try {
+    const dbres = await client.query("SELECT SUM(weight*reps) FROM sets");
+    res.status(200).json({ status: "success", data: dbres.rows });
+  } catch (err) {
+    res.status(404).json({ status: "failed", error: err });
+  }
+});
+
+app.get("/workouts/week", async (req, res) => {
+  try {
+    const dbres = await client.query(
+      "SELECT * FROM (SELECT EXTRACT(YEAR FROM date) as yr, EXTRACT(WEEK FROM date) as week, COUNT(*) AS num FROM workouts GROUP BY yr, week LIMIT 8) w ORDER BY yr;"
     );
     res.status(200).json({ status: "success", data: dbres.rows });
   } catch (err) {
