@@ -72,7 +72,7 @@ app.get("/totalweight", async (req, res) => {
 app.get("/workouts/week", async (req, res) => {
   try {
     const dbres = await client.query(
-      "SELECT * FROM (SELECT EXTRACT(YEAR FROM date) as yr, EXTRACT(WEEK FROM date) as week, COUNT(*) AS num FROM workouts GROUP BY yr, week LIMIT 8) w ORDER BY yr;"
+      "SELECT * FROM (SELECT EXTRACT(YEAR FROM date) as yr, EXTRACT(WEEK FROM date) as week, COUNT(*) AS num FROM workouts GROUP BY yr, week LIMIT 8) w ORDER BY yr"
     );
     res.status(200).json({ status: "success", data: dbres.rows });
   } catch (err) {
